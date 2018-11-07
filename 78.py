@@ -30,7 +30,6 @@ def p(n):
     
 for n in range(1, 60000):
   pn = p(n)
-  print(n, pn, end='\r') 
+  print(n, end='\r') 
   if pn % modulus == 0:
-    print(n, '          ') 
     break
