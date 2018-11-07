@@ -6,7 +6,7 @@ def num2word(n):
   s = []
 
   def stripOrders(n, p10, wordArr):
-    for i in (range(len(wordArr), 0, -1)):
+    for i in range(len(wordArr), 0, -1):
       t = n // 10**(p10*i)
       if t > 0:
         return (n % 10**(p10*i), num2word(t) + [wordArr[i-1]])
