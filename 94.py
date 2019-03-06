@@ -11,15 +11,6 @@ def area216(a, b, c):
   p = (a + b + c)
   return p*(p-2*a)*(p-2*b)*(p-2*c)
 
-# fast integer sqrt
-def isqrt(n):
-  x = n
-  y = (x + 1) // 2
-  while y < x:
-      x = y
-      y = (x + n // x) // 2
-  return x
-    
 def check(a, d, s):
   ar = area216(a, a, a+d)
   t = int(math.sqrt(ar // 16))
