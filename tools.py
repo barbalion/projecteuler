@@ -49,3 +49,9 @@ def gcd(m, n):
   while m % n != 0:
     m, n = n, m % n
   return n 
+
+def lineNo():
+  import inspect
+  import ntpath
+  info = inspect.stack()[1][0]
+  return f'{ntpath.basename(info.f_code.co_filename)}({info.f_lineno}): '
