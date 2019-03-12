@@ -1,24 +1,30 @@
-steps = [ # 5 directions (with prime numbers as coords and 0 in total)
-  (0, 11),
-  (-3, -1),
-  (-2, -2),
-  (2, -3),
-  (3, -5),
+steps = [ # 5 'orthogonal' directions (with prime numbers as coords and 0 in total)
+  (1, 11),
+  (2, -1),
+  (3, -2),
+  (-1,-3),
+  (-5,-5),
 ]
 
 def stepNturn(p, direction):
   return (p[0] + steps[p[2]][0], p[1] + steps[p[2]][1], (p[2] + direction) % 5)
 
 mem = {}
-def walk(p, n):
+def walk(p, n, log = []):
   if n == 0:
-    return 1 if p[0] == 0 and p[1] == 0 and p[2] == 0 else 0
+    return 1 if p[2] == 0 else 0
+
+  if not log:
+    log = [n // 5] * 5
+  log[p[2]] -= 1
+  if log[p[2]] < 0:
+    return 0
 
   s = str(n)+':'+str(p)
   if s in mem:
     return mem[s]
 
-  res = walk(stepNturn(p, 1), n - 1) + walk(stepNturn(p, -1), n - 1)
+  res = sum([walk(stepNturn(p, d), n - 1, log[::]) for d in [1, -1]])
   mem[s] = res
   return res
 
