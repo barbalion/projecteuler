@@ -1,7 +1,7 @@
 import math
+import time
 
-#primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
-primes = [2, 3]
+primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
 
 def isPrime(n):
   i = 0
@@ -87,3 +87,7 @@ def primesN2M(n = 0, m = 0, portion = 100000):
   for i in range(len(sieve)):
     if sieve[i]:
       yield n + i
+
+startTime = time.perf_counter()
+def elapsed():
+  print(f'elapsed_time={time.perf_counter() - startTime:0.3f}')
