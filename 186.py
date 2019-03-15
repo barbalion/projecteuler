@@ -1,10 +1,9 @@
 maxCalls = 10000000
 userCount = 1000000
 needFriends = userCount - userCount // 100 # >= 99%
-k = 0
-S = [0] * (maxCalls + 1)
 def laggedFib():
-  global k, S
+  k = 0
+  S = [0] * (maxCalls*2 + 1)
   while True:
     k += 1
     if S[k] == 0:
@@ -19,6 +18,42 @@ def records():
   while True:
     yield (next(nums), next(nums))
 
+class llist:
+  class litem:
+    next = None
+    def __init__(self, v):
+      self.v = v
+
+    first = None
+  last = None
+  count = 0
+
+  def __init__(self, v):
+    self.add(v)
+
+  def add(self, i):
+    li = self.litem(i)
+    if self.last:
+      self.last.next = li
+    else:
+      self.first = li
+    self.last = li
+    self.count += 1
+      
+  def addAll(self, i):
+    if self.last:
+      self.last.next = i.first
+    else:
+      self.first = i.first
+    self.last = i.last
+    self.count += i.count
+
+  def __iter__(self):
+    i = self.first
+    while i:
+      yield i.v
+      i = i.next
+
 def calc(pm):
   users = [None] * userCount
   calls = 0
@@ -29,7 +64,7 @@ def calc(pm):
       continue
     calls += 1     
     if calls % 1000 == 0:
-      print(f'calls={calls} gr={gr} (+{gr1}-{gr2}) dup={dup} maxLen={maxLen} pm_friends={len(users[pm]) if users[pm] else 0} time={time.perf_counter() - t:0.3f}')
+      print(f'calls={calls} gr={gr} (+{gr1}-{gr2}) dup={dup} maxLen={maxLen} pm_friends={users[pm].count if users[pm] else 0} time={time.perf_counter() - t:0.3f}')
       gr1 = 0
       gr2 = 0
       dup = 0
@@ -43,37 +78,28 @@ def calc(pm):
       continue
 
     if not g1:
-      g1 = [u1]
+      g1 = llist(u1)
       users[u1] = g1
       gr += 1 # stat
       gr1 += 1 # stat
     if g2:
-      if len(g2) > len(g1):
+      if g2.count > g1.count:
         g1, g2 = g2, g1
         u1, u2 = u2, u1
-      g1 += g2
+
+      g1.addAll(g2)
       gr2 += 1 # stat
       gr -= 1 # stat
       for u in g2:
         users[u] = g1
     else:
-      g1 += [u2]
+      g1.add(u2)
       users[u2] = g1
 
-    maxLen = max(maxLen, len(g1))
-    if g1 == users[pm]:
-      print(f'New friend for pm: {len(g1)} at call {calls}')
-      g1.sort()
-      cnt = 0
-      pu = -1
-      for u in g1:
-        if u != pu:
-          cnt += 1
-          pu = u
-      print(f'        this gives {cnt} unique friends')
-      if cnt >= needFriends:
-        print(f'PM is a common friend ({cnt}) after {calls} calls')
-        return 
+    maxLen = max(maxLen, g1.count)
+    if g1 == users[pm] and g1.count >= needFriends:
+      print(f'PM is a common friend ({g1.count}) after {calls} calls')
+      return 
 
 import time
 t = time.perf_counter()
