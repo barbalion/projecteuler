@@ -26,25 +26,24 @@ def allPrimes():
   while True:
     yield primeN(n)
     n += 1
-    
-def factor(n):
-  res = []
-  p = 2
-  lim = int(n  ** .5)
-  while n > 1 and p < lim:
-    if n % p == 0:
-      if len(res) == 0 or res[-1][0] != p:
-        res += [[p, 0]]
-      res[-1] = [p, res[-1][1]+1]
-      n = n // p
-      lim = int(math.sqrt(n))
-      continue
-    if p > 2:
-      p += 2
-    else:
-      p += 1
-  return res  
 
+factorMem = {1:[]}
+def factor(n):
+  if n in factorMem:
+    return factorMem[n]
+  a = n
+  for p in primesN2M(2, int(a ** .5)):
+    cnt = 0
+    while a % p == 0:
+      cnt += 1
+      a = a // p
+    if cnt > 0:
+      res = [[p, cnt]] + factor(a)
+      factorMem[n] = res
+      return res
+  res = [[n, 1]]
+  factorMem[n] = res
+  return res
 
 def gcd(m, n):
   while m % n != 0:
@@ -59,35 +58,125 @@ def lineNo():
 
 
 # calc prime numbers from N to M in portions at once (by sieve)
-def primesN2M(n = 0, m = 0, portion = 100000):
-  if m <= primes[-1]: # check precalculated to simplify
+def primesN2M(n = 0, m = 0, portion = 100000, doYield = True):
+  if m < n:
+    return
+  global primes
+  if n <= primes[-1]: # check precalculated to simplify
     for p in primes:
       if p < n:
         continue
       if p <= m:
-        yield p
+        if doYield:
+          yield p
       else:
-        return
-    return
+        n = p
+        break
+
+  addToMem = []
   if m - n > portion: 
     for k in range(n, m + 1, portion):
-      for p in primesN2M(k, k + min(portion - 1, m - k), portion):
-        yield p
-    return
-  if n == 0: # ignore 0 and 1
-    n = 2
+      for p in primesN2M(k, k + min(portion - 1, m - k), portion, doYield):
+        if p == primes[-1] or addToMem:
+          addToMem += [p]
+        if doYield:
+          yield p
+  else:
+    if n == 0: # ignore 0 and 1
+      n = 2
 
-  if m < n or m < 2:
-    return
+    if m < n or m < 2:
+      return
+    sieve = [1] * (m - n + 1)
+    for i in primesN2M(2, int(m ** .5), portion, True): # call recursively
+      for j in range(max(2, -(-n // i)) * i, m + 1, i):
+        sieve[j - n] = 0
+    for i in range(len(sieve)):
+      if sieve[i]:
+        if n + i == primes[-1] or addToMem:
+          addToMem += [n+i]
+        if doYield:
+          yield n + i
+  if len(addToMem) > 1 and primes[-1] == addToMem[0]:
+    primes += addToMem[1:]
+  if not doYield:
+    yield []
 
-  sieve = [1] * (m - n + 1)
-  for i in primesN2M(2, int(m ** .5), portion): # call recursively
-    for j in range(max(2, -(-n // i)) * i, m + 1, i):
-      sieve[j - n] = 0
-  for i in range(len(sieve)):
-    if sieve[i]:
-      yield n + i
+def cachePrimes(n):
+  next(primesN2M(2, n, n, False))
 
-startTime = time.perf_counter()
-def elapsed():
-  print(f'elapsed_time={time.perf_counter() - startTime:0.3f}')
+
+def poly2EtaGuess(res, lastTimes):
+  if len(lastTimes)<3:
+    return res
+  (p1, y1), (p2, y2), (p3, y3) = lastTimes[-3:]
+  x1, x2, x3, xm = p1[0], p2[0], p3[0], p1[2]
+  eta = ((x3 - xm)*((x2 - x3)*(x2 - xm)*y1 + (-x1 + x3)*(x1 - xm)*y2) + (x1 - x2)*(x1 - xm)*(x2 - xm)*y3)/((x1 - x2)*(x1 - x3)*(x2 - x3))
+  return (res[0], res[1], eta - res[0])
+
+def poly3EtaGuess(res, lastTimes):
+  if len(lastTimes)<4:
+    return res
+  (p1, y1), (p2, y2), (p3, y3), (p4, y4) = lastTimes[-4:]
+  x1, x2, x3, x4, xm = p1[0], p2[0], p3[0], p4[0], p1[2]
+  print(x1, y1, x2, y2, x3, y3, x4, y4, xm)
+  ym = (x3*(x4 - xm)*(x4**2*xm**2*y1 + (-x1 + x4)*(x1 - xm)*(x4*xm + x1*(x4 + xm))*y2) + x1*(x1 - x4)*x4*(x1 - xm)*(x4 - xm)*xm*(y2 - y3) + 
+     x3**2*(x4*xm**3*(y1 - y2) + x1**3*x4*y2 - x4**3*(xm*(y1 - y2) + x1*y2) - x1*(x1 - xm)*xm*(x1 + xm)*(y2 - y4)) + x1**2*x3*xm**2*(-x1 + xm)*y4 + 
+     x3**3*((x4 - xm)*(x4*xm*y1 + (-x1 + x4)*(x1 - xm)*y2) + x1*xm*(-x1 + xm)*y4) + x2**3*(-((x4 - xm)*((x3 - x4)*(x3 - xm)*y1 + (-x1 + x4)*(x1 - xm)*y3)) + (-x1 + x3)*(-x1 + xm)*(-x3 + xm)*y4) + 
+     x2**2*(-(x4*(xm**3*(y1 - y3) + x1**3*y3)) + x4**3*(xm*y1 + x1*y3 - xm*y3) + x1*(x1 - xm)*xm*(x1 + xm)*(y3 - y4) + x3*(-(x4**3*y1) + xm**3*(y1 - y4) + x1**3*y4) + x3**3*(x4*y1 - xm*y1 - x1*y4 + xm*y4)) + 
+     x2*(-((x4 - xm)*(x4**2*xm**2*y1 + (-x1 + x4)*(x1 - xm)*(x4*xm + x1*(x4 + xm))*y3)) + x1**2*(x1 - xm)*xm**2*y4 + x3**3*(-(x4**2*y1) + xm**2*(y1 - y4) + x1**2*y4) + 
+        x3**2*(x4**3*y1 - x1**3*y4 + xm**3*(-y1 + y4))))/((x1 - x2)*(x1 - x3)*(x2 - x3)*(x1 - x4)*(x2 - x4)*(x3 - x4))
+  return (res[0], res[1], ym)
+
+def poly2EtaGuessLeastSq(res, lastTimes):
+  if len(lastTimes)<3:
+    return res
+
+  n = len(lastTimes)
+  xs = [p[0][0] for p in lastTimes]
+  ys = [p[1] for p in lastTimes]
+  xm = lastTimes[-1][0][2]
+  sx1, sx2, sx3, sx4 = sum([x for x in xs]), sum([x*x for x in xs]), sum([x**3 for x in xs]), sum([x**4 for x in xs])
+  sxy, sx2y, sy = sum([x*y for x, y in zip(xs, ys)]), sum([x*x*y for x, y in zip(xs, ys)]), sum([y for y in ys])
+  a = (sx1**2*sx2y - n*sx2*sx2y + n*sx3*sxy + sx2**2*sy - sx1*(sx2*sxy + sx3*sy))/(sx2**3 + n*sx3**2 + sx1**2*sx4 - sx2*(2*sx1*sx3 + n*sx4))
+  b = (-(sx1*sx2*sx2y) + n*sx2y*sx3 + sx2**2*sxy - n*sx4*sxy - sx2*sx3*sy + sx1*sx4*sy)/(sx2**3 + n*sx3**2 + sx1**2*sx4 - sx2*(2*sx1*sx3 + n*sx4))
+  c = (sx2**2*sx2y - sx1*sx2y*sx3 + sx1*sx4*sxy + sx3**2*sy - sx2*(sx3*sxy + sx4*sy))/(sx2**3 + n*sx3**2 + sx1**2*sx4 - sx2*(2*sx1*sx3 + n*sx4))
+  ym = a*xm*xm + b*xm + c
+  return res[:-1] + (ym - res[0],)
+
+startTime = 0
+prevTime = 0
+lastTimes = []
+storeTimes = 100
+def resetTime():
+  global startTime,lastTimes
+  startTime = time.perf_counter()
+  prevTime = time.perf_counter()
+  lastTimes = []
+
+resetTime()
+def elapsed(pos=None, doPrint = True, timeGuess=poly2EtaGuessLeastSq):
+  global lastTimes, prevTime
+  res = (time.perf_counter() - startTime, time.perf_counter() - prevTime, 0)
+  prevTime = time.perf_counter()
+  if pos and len(pos) == 3:
+    curr = pos[0]-pos[1]
+    maxP = pos[2]-pos[1]
+    if curr == 0:
+      curr = 1
+
+    if len(lastTimes) >= storeTimes:
+      lastTimes = lastTimes[1:storeTimes]
+    lastTimes += [(pos, time.perf_counter() - startTime)]
+
+    res = (res[0], res[1], ((time.perf_counter() - startTime)*(maxP-curr))/curr)
+    if timeGuess:
+      res = timeGuess(res, lastTimes)
+
+  if doPrint:
+    if pos:
+      print(f'pos={pos[0]} total={res[0]:0.3f}s, prev={res[1]:0.3f}s, eta={res[2]:0.3f}s')
+    else:
+      print(f'total={res[0]:0.3f}, prev={res[1]:0.3f}')
+  return res
+
