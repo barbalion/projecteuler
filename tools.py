@@ -105,37 +105,11 @@ def primesN2M(n = 0, m = 0, portion = 100000, doYield = True):
 def cachePrimes(n):
   next(primesN2M(2, n, n, False))
 
-
-def poly2EtaGuess(res, lastTimes):
-  if len(lastTimes)<3:
-    return res
-  (p1, y1), (p2, y2), (p3, y3) = lastTimes[-3:]
-  x1, x2, x3, xm = p1[0], p2[0], p3[0], p1[2]
-  eta = ((x3 - xm)*((x2 - x3)*(x2 - xm)*y1 + (-x1 + x3)*(x1 - xm)*y2) + (x1 - x2)*(x1 - xm)*(x2 - xm)*y3)/((x1 - x2)*(x1 - x3)*(x2 - x3))
-  return (res[0], res[1], eta - res[0])
-
-def poly3EtaGuess(res, lastTimes):
-  if len(lastTimes)<4:
-    return res
-  (p1, y1), (p2, y2), (p3, y3), (p4, y4) = lastTimes[-4:]
-  x1, x2, x3, x4, xm = p1[0], p2[0], p3[0], p4[0], p1[2]
-  print(x1, y1, x2, y2, x3, y3, x4, y4, xm)
-  ym = (x3*(x4 - xm)*(x4**2*xm**2*y1 + (-x1 + x4)*(x1 - xm)*(x4*xm + x1*(x4 + xm))*y2) + x1*(x1 - x4)*x4*(x1 - xm)*(x4 - xm)*xm*(y2 - y3) + 
-     x3**2*(x4*xm**3*(y1 - y2) + x1**3*x4*y2 - x4**3*(xm*(y1 - y2) + x1*y2) - x1*(x1 - xm)*xm*(x1 + xm)*(y2 - y4)) + x1**2*x3*xm**2*(-x1 + xm)*y4 + 
-     x3**3*((x4 - xm)*(x4*xm*y1 + (-x1 + x4)*(x1 - xm)*y2) + x1*xm*(-x1 + xm)*y4) + x2**3*(-((x4 - xm)*((x3 - x4)*(x3 - xm)*y1 + (-x1 + x4)*(x1 - xm)*y3)) + (-x1 + x3)*(-x1 + xm)*(-x3 + xm)*y4) + 
-     x2**2*(-(x4*(xm**3*(y1 - y3) + x1**3*y3)) + x4**3*(xm*y1 + x1*y3 - xm*y3) + x1*(x1 - xm)*xm*(x1 + xm)*(y3 - y4) + x3*(-(x4**3*y1) + xm**3*(y1 - y4) + x1**3*y4) + x3**3*(x4*y1 - xm*y1 - x1*y4 + xm*y4)) + 
-     x2*(-((x4 - xm)*(x4**2*xm**2*y1 + (-x1 + x4)*(x1 - xm)*(x4*xm + x1*(x4 + xm))*y3)) + x1**2*(x1 - xm)*xm**2*y4 + x3**3*(-(x4**2*y1) + xm**2*(y1 - y4) + x1**2*y4) + 
-        x3**2*(x4**3*y1 - x1**3*y4 + xm**3*(-y1 + y4))))/((x1 - x2)*(x1 - x3)*(x2 - x3)*(x1 - x4)*(x2 - x4)*(x3 - x4))
-  return (res[0], res[1], ym)
-
 def poly2EtaGuessLeastSq(res, lastTimes):
   if len(lastTimes)<3:
     return res
-
-  n = len(lastTimes)
-  xs = [p[0][0] for p in lastTimes]
-  ys = [p[1] for p in lastTimes]
-  xm = lastTimes[-1][0][2]
+  n, xm = len(lastTimes), lastTimes[-1][0][2]
+  xs, ys = [p[0][0] for p in lastTimes], [p[1] for p in lastTimes]
   sx1, sx2, sx3, sx4 = sum([x for x in xs]), sum([x*x for x in xs]), sum([x**3 for x in xs]), sum([x**4 for x in xs])
   sxy, sx2y, sy = sum([x*y for x, y in zip(xs, ys)]), sum([x*x*y for x, y in zip(xs, ys)]), sum([y for y in ys])
   a = (sx1**2*sx2y - n*sx2*sx2y + n*sx3*sxy + sx2**2*sy - sx1*(sx2*sxy + sx3*sy))/(sx2**3 + n*sx3**2 + sx1**2*sx4 - sx2*(2*sx1*sx3 + n*sx4))
