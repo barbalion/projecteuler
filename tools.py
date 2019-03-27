@@ -121,7 +121,7 @@ def poly2EtaGuessLeastSq(res, lastTimes):
 startTime = 0
 prevTime = 0
 lastTimes = []
-storeTimes = 100
+storeTimes = 50
 def resetTime():
   global startTime,lastTimes
   startTime = time.perf_counter()
@@ -149,8 +149,8 @@ def elapsed(pos=None, doPrint = True, timeGuess=poly2EtaGuessLeastSq):
 
   if doPrint:
     if pos:
-      print(f'pos={pos[0]} total={res[0]:0.3f}s, prev={res[1]:0.3f}s, eta={res[2]:0.3f}s')
+      print(f'pos={pos[0]} prev={res[1]:0.3f}s, total={res[0]:0.0f}s, eta={res[2]:0.0f}s')
     else:
-      print(f'total={res[0]:0.3f}, prev={res[1]:0.3f}')
+      print(f'elapsed time={res[0]:0.3f}')
   return res
 
