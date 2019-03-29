@@ -149,8 +149,8 @@ def elapsed(pos=None, doPrint = True, timeGuess=poly2EtaGuessLeastSq):
 
   if doPrint:
     if pos:
-      print(f'pos={pos[0]} prev={res[1]:0.3f}s, total={res[0]:0.0f}s, eta={res[2]:0.0f}s')
+      print(f'pos={pos[0]} prev={res[1]:0.3f}s, total={res[0]:0.0f}s, eta={res[2]:0.0f}s', flush=True)
     else:
-      print(f'elapsed time={res[0]:0.3f}')
+      print(f'elapsed time={res[0]:0.3f}', flush=True)
   return res
 

@@ -1,22 +1,35 @@
 from tools import *
+from functools import reduce
 P = 50000
+
+def divs(f, m):
+  if not f:
+    return [1] if m > 0 else []
+  p, n = f[0]
+  res = divs(f[1:], m)
+  for r in res[:]:
+    for i in range(1, n+1):
+      s = p ** i * r
+      if s <= m:
+        res += [s]
+  return res
 
 t = (P - 1) // 2 # {1, n, n} is allways a solution, just skip it
 
+maxA = int(0.3*P) # approx maxA when minN==maxN
+cachePrimes(maxA)
 resetTime()
-maxN = int((18**.5-4)*P / 2) + 1 # approx n when minA > maxA
-for n in range(1, maxN): 
-  minA = int((2*n**2+1)**.5+n+.5)
-  maxA = int(((n**2+4*n*P+4)**.5-n)/2)
-  for a in range(minA + (minA + n + 1)%2, maxA + 1, 2):
-    if n % 2 == 0:
-      if (a**2-1) % (2*n) == 0:
-        t +=1
-    else:
-      if (a**2-1) % n == 0:
-        t +=1
-  if n % 100 == 0:
-    elapsed((n, 1, maxN))
+for a in range(2, maxA + 1):
+  f = factor((a**2-1)//(a%2+1))
+  maxN = int(a*0.414213562373) # approx maxN when b > a
+  minN = (a*a-1)//(P-a) # when a + b + c > P
+  for n in divs(f, maxN):
+    if n <= minN or (a+n)%2==0:
+      continue
+    t += 1
+  
+  if a % 10000 == 0:
+    elapsed((a, 1, maxA))
 
 print(t)
 
