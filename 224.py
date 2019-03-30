@@ -1,7 +1,7 @@
 from tools import *
 from functools import reduce
 P = 25000000
-maxA = int(0.3*P) 
+maxA = int(0.3*P) # approx maxA when minN==maxN
 
 memDivs = [None]*(maxA + 2)
 def divs(a):
@@ -17,6 +17,7 @@ def divs(a):
       cnt += 1
     if cnt > 0:
       res = [d * p**n for n in range(cnt+1) for d in res]
+      #return [d * p**n for d in divs(a) for n in range(cnt+1)]
     if a == 1:
       break
   if a > 1:
@@ -24,7 +25,17 @@ def divs(a):
   memDivs[a2] = res
   return res    
 
-t = (P - 1) // 2 # {1, n, n} is allways a solution, just skip it
+#print(list(divs(21)))
+#exit()
+
+def check(a, b, c):
+#  if a > b:
+#    a, b = b, a
+  if a*a + b*b == c*c + 1 and a+b+c <= P:
+    print(f'{a},{b},{c}: {a*a}+{b*b}={c*c}+1')
+  return 1 if a*a + b*b == c*c + 1 and a+b+c <= P else 0
+
+t = (P - 1) // 2 + 1 # {1, n, n} is allways a solution, just skip it
 
 cachePrimes(maxA)
 storeTimes = 1000
@@ -39,6 +50,7 @@ for a in range(2, maxA + 1):
       p = d1*d2
       q = a21 // p
       if (p >= int(a * mm)) and (p <= P - a) and (p+q)&1 == 0:
+        #check(a, (p-q)//2,(p+q)//2)
         t +=1
   
   if a % 10000 == 0:
