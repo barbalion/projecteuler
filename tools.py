@@ -28,8 +28,9 @@ def allPrimes():
     n += 1
 
 factorMem = {1:[]}
+maxNFactorMem = 1000000
 def factor(n):
-  if n in factorMem:
+  if n < maxNFactorMem and n in factorMem:
     return factorMem[n]
   a = n
   for p in primesN2M(2, int(a ** .5)):
@@ -39,10 +40,12 @@ def factor(n):
       a = a // p
     if cnt > 0:
       res = [[p, cnt]] + factor(a)
-      factorMem[n] = res
+      if n < maxNFactorMem:
+        factorMem[n] = res
       return res
   res = [[n, 1]]
-  factorMem[n] = res
+  if n < maxNFactorMem:
+    factorMem[n] = res
   return res
 
 def gcd(m, n):

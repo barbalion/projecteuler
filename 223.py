@@ -1,6 +1,6 @@
 from tools import *
 from functools import reduce
-P = 50000
+P = 25000000
 
 def divs(f, m):
   if not f:
@@ -14,15 +14,16 @@ def divs(f, m):
         res += [s]
   return res
 
-t = (P - 1) // 2 # {1, n, n} is allways a solution, just skip it
+t = (P - 1) // 2 + 1 # {1, n, n} is allways a solution, just skip it
 
 maxA = int(0.3*P) # approx maxA when minN==maxN
 cachePrimes(maxA)
+storeTimes = 1000
 resetTime()
 for a in range(2, maxA + 1):
-  f = factor((a**2-1)//(a%2+1))
   maxN = int(a*0.414213562373) # approx maxN when b > a
   minN = (a*a-1)//(P-a) # when a + b + c > P
+  f = factor((a**2-1)//(a%2+1))
   for n in divs(f, maxN):
     if n <= minN or (a+n)%2==0:
       continue
