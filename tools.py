@@ -157,3 +157,17 @@ def elapsed(pos=None, doPrint = True, timeGuess=poly2EtaGuessLeastSq):
       print(f'elapsed time={res[0]:0.3f}', flush=True)
   return res
 
+def divs(a):
+  res = [1]
+  for p in primesN2M(2, int(a **.5)):
+    cnt = 0
+    while a % p == 0:
+      a //= p
+      cnt += 1
+    if cnt > 0:
+      res = [d * p**n for n in range(cnt+1) for d in res]
+    if a == 1:
+      break
+  if a > 1:
+    res += [d * a  for d in res]
+  return res    
