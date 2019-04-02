@@ -1,29 +1,20 @@
 from tools import *
-from collections import deque
+from heapq import *
 
-def check(a, p, q, r):
-  d = p*q+q*r+r*p
-  pd = p*q*r
-  if a == pd and d!=0 and a==pd//d:
-    print(f'{a}: {p},{-q},{-r}')
-    return 1
-  else:
-    return 0
+N = 150000
 
-def find(a):
-  ds = divs(a)
-  ds.sort()
-  for p in ds:
-    for q in ds:
-      for r in ds:
-        if check(a, p, -q, -r):
-          return 1
-  return 0
+def cnt(u):
+  res = [u[0][0]]
+  while len(res) < N*2:
+    _, p, q, r = heappop(u)
+    for p, q, r in [(q, -p + 2*q, 2*q + r), (r, -p + 2*r, 2*r + q)]:
+      A = p*q*r
+      heappush(u, (A, p, q, r))
+      res.append(A)
+  return res
 
-N = 20
+res = cnt([(6, 1, 2, 3)])
+res.sort()
+print(res[N-1])
 
-cnt = 0
-a = 1
-while cnt < N:
-  a += 1
-  cnt += find(a)
+elapsed()
