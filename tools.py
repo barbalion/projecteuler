@@ -1,6 +1,11 @@
 import math
 import time
 
+def gcd(m, n):
+  while m % n != 0:
+    m, n = n, m % n
+  return n 
+
 primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
 
 def isPrime(n):
@@ -10,6 +15,35 @@ def isPrime(n):
     if n % primeN(i) == 0:
       return False
     i += 1
+  return True
+
+def isPrimeFerma(n):
+  return pow(37, n-1, n) == 1 and pow(59, n-1, n) == 1 and pow(83, n-1, n) == 1
+
+from random import randrange
+def isPrimeMillerRabin(n, k=5):
+  if n == 2:
+    return True
+  if not n & 1:
+    return False
+  def check(a, s, d, n):
+    x = pow(a, d, n)
+    if x == 1:
+      return True
+    for i in range(s - 1):
+      if x == n - 1:
+        return True
+      x = pow(x, 2, n)
+    return x == n - 1
+  s = 0
+  d = n - 1
+  while d % 2 == 0:
+    d >>= 1
+    s += 1
+  for i in range(k):
+    a = randrange(2, n - 1)
+    if not check(a, s, d, n):
+      return False
   return True
 
 def primeN(n):
@@ -29,10 +63,14 @@ def allPrimes():
 
 factorMem = {1:[]}
 maxNFactorMem = 1000000
-def factor(n):
+def factor(n, precalculatePrime=False):
   if n < maxNFactorMem and n in factorMem:
     return factorMem[n]
   a = n
+  if precalculatePrime:
+    cachePrimes(int(a**.5))
+    print(a)
+    elapsed()
   for p in primesN2M(2, int(a ** .5)):
     cnt = 0
     while a % p == 0:
@@ -48,40 +86,61 @@ def factor(n):
     factorMem[n] = res
   return res
 
-def gcd(m, n):
-  while m % n != 0:
-    m, n = n, m % n
-  return n 
+def isDivC(x1, x2):
+  a1, b1, a2, b2 = x1.real, x1.imag, x2.real, x2.imag
+  return (a1*a2+b1*b2) % (a2**2+b2**2) == 0 and (a2*b1-a1*b2) % (a2**2+b2**2) == 0
+def divC(x1, x2):
+  a1, b1, a2, b2 = x1.real, x1.imag, x2.real, x2.imag
+  return (a1*a2+b1*b2) // (a2**2+b2**2) + (a2*b1-a1*b2)//(a2**2+b2**2)*1j
+def asSumOfSquares(c):
+  for a in range(int((c/2)**.5)+1):
+    b = int((c - a**2)**.5)
+    if a*a+b*b==c:
+      return (a,b)
+  return None
 
-def lineNo():
-  import inspect
-  import ntpath
-  info = inspect.stack()[1][0]
-  return f'{ntpath.basename(info.f_code.co_filename)}({info.f_lineno}): '
-
+def factorC(c):
+  res = []
+  norm = int(c.real)**2+int(c.imag)**2
+  for p, n in factor(norm):
+    if p == 2:
+      res += [(1+1j, n)]
+      c = divC(c, 2j**(n//2))
+    elif p % 4 == 3: # prime by it self
+      res += [(p, n//2)]
+      c = divC(c, p ** (n//2))
+    else: # p % 4==1 - decomposing in to 2 conjugate primes
+      a, b = asSumOfSquares(p)
+      for d in [a+1j*b, b+1j*a]:
+        for n2 in range(0, 100+n+1):
+          if isDivC(c, d):
+            c = divC(c, d)
+          else:
+            if n2 > 0:
+              res += [(d, n2)]
+            break
+  return [(c, 1)] + res
 
 # calc prime numbers from N to M in portions at once (by sieve)
 def primesN2M(n = 0, m = 0, portion = 100000, doYield = True):
-  if m < n:
+  if n > m:
     return
   global primes
-  if n <= primes[-1]: # check precalculated to simplify
+  addToMem = []
+  if doYield and n <= primes[-1]: # check precalculated to simplify
     for p in primes:
       if p < n:
         continue
       if p <= m:
-        if doYield:
-          yield p
+        yield p
       else:
-        n = p
-        break
+        return
+    addToMem = [primes[-1]]
+    n = primes[-1] + 1
 
-  addToMem = []
   if m - n > portion: 
     for k in range(n, m + 1, portion):
       for p in primesN2M(k, k + min(portion - 1, m - k), portion, doYield):
-        if p == primes[-1] or addToMem:
-          addToMem += [p]
         if doYield:
           yield p
   else:
@@ -96,17 +155,18 @@ def primesN2M(n = 0, m = 0, portion = 100000, doYield = True):
         sieve[j - n] = 0
     for i in range(len(sieve)):
       if sieve[i]:
-        if n + i == primes[-1] or addToMem:
+        if addToMem or n + i == primes[-1]:
           addToMem += [n+i]
         if doYield:
           yield n + i
-  if len(addToMem) > 1 and primes[-1] == addToMem[0]:
-    primes += addToMem[1:]
+
+    if len(addToMem) > 1 and primes[-1] == addToMem[0]:
+      primes += addToMem[1:]
   if not doYield:
-    yield []
+    yield None
 
 def cachePrimes(n):
-  next(primesN2M(2, n, n, False))
+  next(primesN2M(primes[-1], n, n, False))
 
 def poly2EtaGuessLeastSq(res, lastTimes):
   if len(lastTimes)<3:
@@ -132,7 +192,7 @@ def resetTime():
   lastTimes = []
 
 resetTime()
-def elapsed(pos=None, doPrint = True, timeGuess=poly2EtaGuessLeastSq):
+def elapsed(pos=None, doPrint = True, timeGuess=poly2EtaGuessLeastSq, s=None):
   global lastTimes, prevTime
   res = (time.perf_counter() - startTime, time.perf_counter() - prevTime, 0)
   prevTime = time.perf_counter()
@@ -152,7 +212,7 @@ def elapsed(pos=None, doPrint = True, timeGuess=poly2EtaGuessLeastSq):
 
   if doPrint:
     if pos:
-      print(f'pos={pos[0]} prev={res[1]:0.3f}s, total={res[0]:0.0f}s, eta={res[2]:0.0f}s', flush=True)
+      print(f'pos={s if s else pos[0]} ({(100*(pos[0]-pos[1])/(pos[2]-pos[1])):0.2f}%) prev={res[1]:0.3f}s, total={res[0]:0.0f}s, eta={res[2]:0.0f}s', flush=True)
     else:
       print(f'elapsed time={res[0]:0.3f}', flush=True)
   return res
@@ -171,3 +231,20 @@ def divs(a):
   if a > 1:
     res += [d * a  for d in res]
   return res    
+
+perflog = {}
+lastPerf = time.perf_counter()
+def pref(id):
+  t, lastPerf = time.perf_counter() - lastPerf, time.perf_counter()
+  if id in perflog:
+    t += perflog[id]
+  perflog[id] = t    
+
+def printPref():
+  print(perflog)
+
+def lineNo():
+  import inspect
+  import ntpath
+  info = inspect.stack()[1][0]
+  return f'{ntpath.basename(info.f_code.co_filename)}({info.f_lineno}): '
