@@ -86,41 +86,6 @@ def factor(n, precalculatePrime=False):
     factorMem[n] = res
   return res
 
-def isDivC(x1, x2):
-  a1, b1, a2, b2 = x1.real, x1.imag, x2.real, x2.imag
-  return (a1*a2+b1*b2) % (a2**2+b2**2) == 0 and (a2*b1-a1*b2) % (a2**2+b2**2) == 0
-def divC(x1, x2):
-  a1, b1, a2, b2 = x1.real, x1.imag, x2.real, x2.imag
-  return (a1*a2+b1*b2) // (a2**2+b2**2) + (a2*b1-a1*b2)//(a2**2+b2**2)*1j
-def asSumOfSquares(c):
-  for a in range(int((c/2)**.5)+1):
-    b = int((c - a**2)**.5)
-    if a*a+b*b==c:
-      return (a,b)
-  return None
-
-def factorC(c):
-  res = []
-  norm = int(c.real)**2+int(c.imag)**2
-  for p, n in factor(norm):
-    if p == 2:
-      res += [(1+1j, n)]
-      c = divC(c, 2j**(n//2))
-    elif p % 4 == 3: # prime by it self
-      res += [(p, n//2)]
-      c = divC(c, p ** (n//2))
-    else: # p % 4==1 - decomposing in to 2 conjugate primes
-      a, b = asSumOfSquares(p)
-      for d in [a+1j*b, b+1j*a]:
-        for n2 in range(0, 100+n+1):
-          if isDivC(c, d):
-            c = divC(c, d)
-          else:
-            if n2 > 0:
-              res += [(d, n2)]
-            break
-  return [(c, 1)] + res
-
 # calc prime numbers from N to M in portions at once (by sieve)
 def primesN2M(n = 0, m = 0, portion = 100000, doYield = True):
   if n > m:
@@ -166,13 +131,66 @@ def primesN2M(n = 0, m = 0, portion = 100000, doYield = True):
     yield None
 
 def cachePrimes(n):
-  next(primesN2M(primes[-1], n, n, False))
+  if n > primes[-1]:
+    next(primesN2M(primes[-1], n, n, False))
+
+def primeAsSumOfSquares(p):
+  if p == 2:
+    return (1, 1)
+  cachePrimes(int(p**.25))
+  if p % 4 != 1:
+    return None
+  # as described at https://www.alpertron.com.ar/4SQUARES.HTM
+  p2 = (p-1)//2
+  for a in allPrimes(): 
+    if pow(a, p2, p) == p-1:
+      break
+  a, b = pow(a, p2//2, p), 1
+  while True:
+    k = (a*a + b*b) // p
+    if k == 1:
+      return (abs(b), abs(a))
+    a1, b1 = (a + k//2) % k - k//2, (b + k//2) % k - k//2
+    a, b = (a * a1 + b * b1) // k, (a * b1 - b * a1) // k
+
+def isDivC(x1, x2):
+  a1, b1, a2, b2 = x1.real, x1.imag, x2.real, x2.imag
+  return (a1*a2+b1*b2) % (a2**2+b2**2) == 0 and (a2*b1-a1*b2) % (a2**2+b2**2) == 0
+def divC(x1, x2):
+  a1, b1, a2, b2 = x1.real, x1.imag, x2.real, x2.imag
+  return (a1*a2+b1*b2) // (a2**2+b2**2) + (a2*b1-a1*b2)//(a2**2+b2**2)*1j
+
+def asSumOfSquares(c):
+  for a in range(int((c/2)**.5)+1):
+    b = int((c - a**2)**.5)
+    if a*a+b*b==c:
+      return (a,b)
+  return None
+
+def factorC(c):
+  res = []
+  norm = int(c.real)**2+int(c.imag)**2
+  for p, n in factor(norm):
+    if p % 4 == 3: # prime by it self
+      res += [(p, n//2)]
+      c = divC(c, p ** (n//2))
+    else: # p % 4==1 or p==2 - decomposing in to 2 conjugate primes
+      a, b = primeAsSumOfSquares(p)
+      for d in [a+1j*b, b+1j*a]:
+        for n2 in range(0, n+1):
+          if isDivC(c, d):
+            c = divC(c, d)
+          else:
+            if n2 > 0:
+              res += [(d, n2)]
+            break
+  return [(c, 1)] + res
 
 def poly2EtaGuessLeastSq(res, lastTimes):
-  if len(lastTimes)<3:
+  if len(lastTimes)<4:
     return res
-  n, xm = len(lastTimes), lastTimes[-1][0][2]
-  xs, ys = [p[0][0] for p in lastTimes], [p[1] for p in lastTimes]
+  n, xm = len(lastTimes)-1, lastTimes[-1][0][2] # skip first point because it's usually very inacurate
+  xs, ys = [p[0][0] for p in lastTimes[1:]], [p[1] for p in lastTimes[1:]]
   sx1, sx2, sx3, sx4 = sum([x for x in xs]), sum([x*x for x in xs]), sum([x**3 for x in xs]), sum([x**4 for x in xs])
   sxy, sx2y, sy = sum([x*y for x, y in zip(xs, ys)]), sum([x*x*y for x, y in zip(xs, ys)]), sum([y for y in ys])
   a = (sx1**2*sx2y - n*sx2*sx2y + n*sx3*sxy + sx2**2*sy - sx1*(sx2*sxy + sx3*sy))/(sx2**3 + n*sx3**2 + sx1**2*sx4 - sx2*(2*sx1*sx3 + n*sx4))
@@ -214,7 +232,7 @@ def elapsed(pos=None, doPrint = True, timeGuess=poly2EtaGuessLeastSq, s=None):
     if pos:
       print(f'pos={s if s else pos[0]} ({(100*(pos[0]-pos[1])/(pos[2]-pos[1])):0.2f}%) prev={res[1]:0.3f}s, total={res[0]:0.0f}s, eta={res[2]:0.0f}s', flush=True)
     else:
-      print(f'elapsed time={res[0]:0.3f}', flush=True)
+      print(f'{s+" " if s else ""}Elapsed time={res[0]:0.3f}', flush=True)
   return res
 
 def divs(a):
